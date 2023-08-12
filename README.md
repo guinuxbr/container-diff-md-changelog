@@ -4,7 +4,7 @@ Generate a container image changelog file based on a JSON file coming from [cont
 
 In other words: The expected JSON structure must match with a `container-diff` JSON output.
 
-For more info about "container-diff" go to <https://github.com/GoogleContainerTools/container-diff>
+For more info about `container-diff` go to <https://github.com/GoogleContainerTools/container-diff>
 
 ## The command used in the tests
 
