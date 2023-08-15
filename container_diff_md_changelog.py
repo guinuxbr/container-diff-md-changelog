@@ -114,7 +114,7 @@ def build_markdown(json_path: str, markdown_path: str) -> str:
             changelog += (
                 f"- {image_01} - **{size_01}**\n\n"
                 f"- {image_02} - **{size_02}**\n\n"
-                f"- Size Difference: {size_diff_value}\n"
+                f"- Size Difference: **{size_diff_value}**\n"
             )
 
     # Write the changelog to a Markdown file
