@@ -16,7 +16,7 @@ def format_size(size_in_bytes: int) -> str:
         str: The size in a human-readable format
     """
     for unit in ["B", "KB", "MB", "GB"]:
-        if size_in_bytes < 1024.0:
+        if size_in_bytes < 1024.0 and size_in_bytes > -1024.0:
             return f"{size_in_bytes:.2f} {unit}"
         size_in_bytes /= 1024.0
     return f"{size_in_bytes:.2f} TB"
@@ -33,18 +33,18 @@ def build_markdown(json_path: str, markdown_path: str) -> str:
         str: _description_
     """
     with open(json_path, "r", encoding="UTF-8") as json_file:
-        jaon_data = json.load(json_file)
+        json_data = json.load(json_file)
 
-    changelog = "# CHANGELOG Generator\n"
+    image_01 = json_data[0]["Image1"]
+    image_02 = json_data[0]["Image2"]
 
-    for entry in jaon_data:
-        image_01 = entry["Image1"]
-        image_02 = entry["Image2"]
+    changelog = f"# CHANGELOG - {image_01} vs {image_02}\n"
+
+    for entry in json_data:
         diff_type = entry["DiffType"]
 
-        changelog += f"\n## {diff_type} Changes - {image_01} vs {image_02}\n\n"
-
         if diff_type == "History":
+            changelog += f"\n## {diff_type} Changes\n\n"
             additions = entry["Diff"]["Adds"]
             deletions = entry["Diff"]["Dels"]
             changelog += "### Added\n\n"
@@ -54,41 +54,68 @@ def build_markdown(json_path: str, markdown_path: str) -> str:
             for deleted_item in deletions:
                 changelog += f"- {deleted_item}\n"
 
-        elif diff_type == "RPM":
+        elif (
+            diff_type == "Apt"
+            or diff_type == "Node"
+            or diff_type == "Pip"
+            or diff_type == "RPM"
+        ):
             packages_01 = entry["Diff"]["Packages1"]
             packages_02 = entry["Diff"]["Packages2"]
             package_diff = entry["Diff"]["InfoDiff"]
 
-            changelog += "### Package Changes\n\n"
+            if (
+                len(packages_01) != 0
+                and len(packages_02) != 0
+                and len(package_diff) != 0
+            ):
+                changelog += f"\n## {diff_type} Changes\n\n"
+                changelog += "### Added Packages\n\n"
+                for package in packages_01:
+                    changelog += (
+                        f"- **{package['Name']}**: {package['Version']} "
+                        f"- Size: {format_size(package['Size'])}\n"
+                    )
 
-            changelog += "#### Added Packages\n\n"
-            for package in packages_01:
-                changelog += f"- **{package['Name']}**: {package['Version']} - Size: {format_size(package['Size'])}\n"
+                changelog += "\n### Removed Packages\n\n"
+                for package in packages_02:
+                    changelog += (
+                        f"- **{package['Name']}**: {package['Version']} "
+                        f"- Size: {format_size(package['Size'])}\n"
+                    )
 
-            changelog += "\n#### Removed Packages\n\n"
-            for package in packages_02:
-                changelog += f"- **{package['Name']}**: {package['Version']} - Size: {format_size(package['Size'])}\n"
-
-            changelog += "\n#### Info Changes\n\n"
-            changelog += f"| Package | Version (Size) - {image_01} | Version (Size) - {image_02} | Size Difference |\n"
-            changelog += "| ------- | ------------------------ | ------------------------ | --------------- |\n"
-            for info in package_diff:
-                package_name = info["Package"]
-                version_01 = info["Info1"]["Version"]
-                size_01 = format_size(info["Info1"]["Size"])
-                version_02 = info["Info2"]["Version"]
-                size_02 = format_size(info["Info2"]["Size"])
-                size_diff = format_size(info["Info1"]["Size"] - info["Info2"]["Size"])
-                changelog += f"| {package_name} | {version_01} ({size_01}) | {version_02} ({size_02}) | {size_diff} |\n"
+                changelog += "\n### Package Version Changes\n\n"
+                changelog += (
+                    f"| Package | Version (Size) - {image_01} "
+                    f"| Version (Size) - {image_02} | Size Difference |\n"
+                )
+                changelog += "| ---------- | ---------- | ---------- | ---------- |\n"
+                for info in package_diff:
+                    package_name = info["Package"]
+                    version_01 = info["Info1"]["Version"]
+                    size_01 = format_size(info["Info1"]["Size"])
+                    version_02 = info["Info2"]["Version"]
+                    size_02 = format_size(info["Info2"]["Size"])
+                    size_diff = format_size(
+                        info["Info1"]["Size"] - info["Info2"]["Size"]
+                    )
+                    changelog += (
+                        f"| {package_name} | {version_01} ({size_01}) "
+                        f"| {version_02} ({size_02}) | {size_diff} |\n"
+                    )
 
         elif diff_type == "Size":
+            changelog += f"\n## {diff_type} Changes\n\n"
             size_diff = entry["Diff"][0]
             _name = size_diff["Name"]
             size_01 = format_size(size_diff["Size1"])
             size_02 = format_size(size_diff["Size2"])
             size_diff_value = format_size(size_diff["Size1"] - size_diff["Size2"])
-            changelog += "### Size Change\n\n"
-            changelog += f"- {image_01} {size_01} -> {image_02} {size_02} (Size Difference: {size_diff_value})\n"
+            changelog += (
+                f"- {image_01} - **{size_01}**\n\n"
+                f"- {image_02} - **{size_02}**\n\n"
+                f"- Size Difference: {size_diff_value}\n"
+            )
 
     # Write the changelog to a Markdown file
     with open(markdown_path, "w", encoding="UTF-8") as markdown_file:
