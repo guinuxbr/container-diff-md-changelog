@@ -1,6 +1,6 @@
 # container-diff-md-changelog
 
-Generate a container image changelog file based on a JSON file coming from [container-diff](https://github.com/GoogleContainerTools/container-diff)
+Generate a container image changelog file based on a JSON file coming from [container-diff](https://github.com/GoogleContainerTools/container-diff).
 
 In other words: The expected JSON structure must match a `container-diff` JSON output.
 
